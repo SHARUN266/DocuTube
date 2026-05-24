@@ -1,0 +1,155 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    /* #FFFFFF */
+    --foreground: 0 0% 6%;
+    /* #0F0F0F */
+
+    --muted: 0 0% 95%;
+    /* #F2F2F2 */
+    --muted-foreground: 0 0% 38%;
+    /* #606060 */
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 6%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 6%;
+
+    --border: 0 0% 88%;
+    /* #E0E0E0 */
+    --input: 0 0% 88%;
+
+    --primary: 0 100% 50%;
+    /* #FF0000 */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 95%;
+    /* #F2F2F2 */
+    --secondary-foreground: 0 0% 6%;
+
+    --accent: 0 0% 91%;
+    /* #E8E8E8 */
+    --accent-foreground: 0 0% 6%;
+
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --ring: 0 100% 50%;
+
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased selection:bg-red-500 selection:text-white;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Glassmorphism utility classes for light mode */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+}
+
+.glass-panel-hover {
+  transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.glass-panel-hover:hover {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(255, 0, 0, 0.2);
+  box-shadow: 0 10px 30px rgba(255, 0, 0, 0.04);
+}
+
+/* Elegant scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Typing Indicator Animation */
+@keyframes bounce-dot {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.typing-dot {
+  animation: bounce-dot 1.2s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* Step pulsing red border border animation */
+@keyframes border-pulse {
+
+  0%,
+  100% {
+    border-color: rgba(255, 0, 0, 0.2);
+  }
+
+  50% {
+    border-color: rgba(255, 0, 0, 0.6);
+  }
+}
+
+.step-active-pulse {
+  animation: border-pulse 2s infinite ease-in-out;
+}
+
+/* Lenis scroll resets */
+html.lenis,
+html.lenis-body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
