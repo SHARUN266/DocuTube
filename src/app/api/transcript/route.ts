@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     if (token) {
       convex.setAuth(token);
     }
-    
+
     // Get workspace sources
     const sources = await convex.query(api.sources.getSources, { workspaceId });
     if (!sources || sources.length === 0) {
@@ -34,9 +34,9 @@ export async function POST(req: Request) {
       transcriptText = transcript.map(t => t.text).join(" ");
     } catch (e: any) {
       console.error("Failed to fetch transcript on server:", e);
-      return NextResponse.json({ 
-        success: false, 
-        error: "Could not extract transcript from this video. Ensure it has captions/subtitles available." 
+      return NextResponse.json({
+        success: false,
+        error: "Could not extract transcript from this video. Ensure it has captions/subtitles available."
       }, { status: 422 });
     }
 

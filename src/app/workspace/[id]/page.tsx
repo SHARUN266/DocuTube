@@ -123,6 +123,13 @@ export default function WorkspacePage() {
   const [streamingMessage, setStreamingMessage] = useState("");
   const [copied, setCopied] = useState(false);
 
+  // Manual Transcript Fallback States
+  const [showManualTranscriptInput, setShowManualTranscriptInput] = useState(false);
+  const [manualTranscript, setManualTranscript] = useState("");
+  const [genError, setGenError] = useState<string | null>(null);
+  const [failedDocId, setFailedDocId] = useState<string | null>(null);
+  const [failedYoutubeUrl, setFailedYoutubeUrl] = useState<string | null>(null);
+
   const [isRenaming, setIsRenaming] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -216,35 +223,46 @@ export default function WorkspacePage() {
   }, [messages, chatLoading]);
 
   // Client-Side AI Generation loop
-  const startClientGeneration = async (docId: string, youtubeUrl: string) => {
+  const startClientGeneration = async (docId: string, youtubeUrl: string, providedTranscript?: string) => {
     if (!apiKey) {
       alert("Please configure your API key from the top right menu in the Navbar.");
       return;
     }
-    if (generationStartedRef.current) return;
+    if (generationStartedRef.current && !providedTranscript) return;
     generationStartedRef.current = true;
 
     try {
       // 1. Update status to processing
       await updateStatus({ id: docId as Id<"workspaces">, status: "processing" });
 
-      // 2. Fetch transcript via proxy
-      const token = await getToken({ template: "convex" });
-      const transcriptRes = await fetch("/api/transcript", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": token ? `Bearer ${token}` : ""
-        },
-        body: JSON.stringify({ workspaceId: docId })
-      });
+      let transcriptText = providedTranscript || "";
 
-      const transcriptData = await transcriptRes.json();
-      if (!transcriptData.success) {
-        throw new Error(transcriptData.error || "Failed to fetch transcript.");
+      if (!transcriptText) {
+        // 2. Fetch transcript via proxy
+        const token = await getToken({ template: "convex" });
+        const transcriptRes = await fetch("/api/transcript", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": token ? `Bearer ${token}` : ""
+          },
+          body: JSON.stringify({ workspaceId: docId })
+        });
+
+        const transcriptData = await transcriptRes.json();
+        if (!transcriptData.success) {
+          setGenError("We couldn't automatically extract the transcript for this video. Please paste the transcript manually below to continue.");
+          setShowManualTranscriptInput(true);
+          setFailedDocId(docId);
+          setFailedYoutubeUrl(youtubeUrl);
+          await updateStatus({ id: docId as Id<"workspaces">, status: "failed" });
+          setIsGenerating(false);
+          generationStartedRef.current = false;
+          return;
+        }
+
+        transcriptText = transcriptData.transcript;
       }
-
-      const transcriptText = transcriptData.transcript;
 
       // 3. Initialize Gemini
       const genAI = new GoogleGenerativeAI(apiKey);
@@ -1025,28 +1043,66 @@ User Question: ${textToSend.trim()}`;
                   </div>
                 )}
 
-                {/* Failed State */}
+                {/* ERROR STATE */}
                 {document.status === "failed" && (
-                  <div className="max-w-md w-full mx-auto my-auto p-8 border border-border bg-white rounded-3xl shadow-xl text-center">
-                    <AlertCircle className="h-14 w-14 text-red-600 mx-auto mb-4 animate-pulse" />
-                    <h2 className="text-xl font-bold text-foreground">Generation Failed</h2>
-                    <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-                      We ran into an error extracting the video details or compiling the AI document. Please make sure the YouTube video has accessible English transcripts.
-                    </p>
-                    <div className="mt-6 flex gap-3 justify-center">
-                      <button
-                        onClick={() => router.push("/workspace/new")}
-                        className="rounded-full bg-red-600 text-white px-5 py-2.5 text-sm font-semibold hover:bg-red-700 transition"
-                      >
-                        Try Another Video
-                      </button>
-                      <button
-                        onClick={() => router.push("/dashboard")}
-                        className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold hover:bg-muted transition"
-                      >
-                        Dashboard
-                      </button>
-                    </div>
+                  <div className="max-w-3xl w-full mx-auto my-auto p-8 border border-border bg-white rounded-3xl shadow-xl">
+                    {showManualTranscriptInput ? (
+                      <div className="flex flex-col gap-4">
+                        <div className="flex items-center justify-center gap-3 mb-2">
+                          <AlertCircle className="h-8 w-8 text-amber-500" />
+                          <h2 className="text-xl font-bold text-foreground">Manual Transcript Required</h2>
+                        </div>
+                        <p className="text-sm text-muted-foreground text-center leading-relaxed px-4">
+                          {genError || "We couldn't automatically extract the transcript for this video. Please paste the transcript manually below to continue."}
+                        </p>
+                        <textarea 
+                          value={manualTranscript}
+                          onChange={(e) => setManualTranscript(e.target.value)}
+                          placeholder="Paste the full transcript text here..."
+                          className="w-full h-64 p-4 rounded-2xl border border-border focus:ring-2 focus:ring-red-500 focus:outline-none resize-none bg-muted/20"
+                        ></textarea>
+                        <div className="flex justify-end gap-3 mt-2">
+                          <button
+                            onClick={() => router.push("/dashboard")}
+                            className="rounded-full border border-border px-6 py-2.5 text-sm font-semibold hover:bg-muted transition"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            disabled={!manualTranscript.trim()}
+                            onClick={() => {
+                              setShowManualTranscriptInput(false);
+                              startClientGeneration(failedDocId!, failedYoutubeUrl!, manualTranscript);
+                            }}
+                            className="rounded-full bg-red-600 text-white px-6 py-2.5 text-sm font-semibold hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Continue Generation
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <AlertCircle className="h-14 w-14 text-red-600 mx-auto mb-4 animate-pulse" />
+                        <h2 className="text-xl font-bold text-foreground">Generation Failed</h2>
+                        <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                          We ran into an error extracting the video details or compiling the AI document. Please make sure the YouTube video has accessible English transcripts.
+                        </p>
+                        <div className="mt-6 flex gap-3 justify-center">
+                          <button
+                            onClick={() => router.push("/workspace/new")}
+                            className="rounded-full bg-red-600 text-white px-5 py-2.5 text-sm font-semibold hover:bg-red-700 transition"
+                          >
+                            Try Another Video
+                          </button>
+                          <button
+                            onClick={() => router.push("/dashboard")}
+                            className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold hover:bg-muted transition"
+                          >
+                            Dashboard
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1135,10 +1191,10 @@ User Question: ${textToSend.trim()}`;
                                   }
                                 }}
                                 className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full border transition-all ${isActive
-                                    ? "bg-red-600 border-red-600 text-white shadow-md shadow-red-600/20 scale-105"
-                                    : isReady
-                                      ? "bg-white border-border hover:border-red-500/20 text-foreground shadow-sm active:scale-95"
-                                      : "bg-muted border-border/40 text-muted-foreground/60 cursor-not-allowed"
+                                  ? "bg-red-600 border-red-600 text-white shadow-md shadow-red-600/20 scale-105"
+                                  : isReady
+                                    ? "bg-white border-border hover:border-red-500/20 text-foreground shadow-sm active:scale-95"
+                                    : "bg-muted border-border/40 text-muted-foreground/60 cursor-not-allowed"
                                   }`}
                                 title={isReady ? `Preview ${step.fullName}` : "Generating..."}
                               >
@@ -1375,7 +1431,7 @@ User Question: ${textToSend.trim()}`;
                       {/* ChatGPT-style Pinned Input Bar */}
                       <div className="shrink-0 bg-gradient-to-t from-white via-white to-transparent pt-6 pb-6 px-4">
                         <div className="max-w-3xl w-full mx-auto relative">
-                          
+
                           {/* Contextual Smart Prompts */}
                           {previewDoc && !chatLoading && (
                             <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 opacity-0 animate-in fade-in slide-in-from-bottom-2 duration-300">

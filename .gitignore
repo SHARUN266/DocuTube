@@ -50,3 +50,5 @@ convex/_generated/
 *.swp
 *.swo
 .gemini/
+
+.vercel
