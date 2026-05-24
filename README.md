@@ -1,29 +1,40 @@
-# 🚀 DocuTube - AI-Powered YouTube to Document Generator
+# 🚀 DocuTube - AI-Powered Tech Lead & PM in your Browser
 
 ![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)
 ![Convex](https://img.shields.io/badge/Convex-Backend-orange?style=for-the-badge)
 ![Gemini AI](https://img.shields.io/badge/Gemini_2.5_Flash-AI-blue?style=for-the-badge&logo=google)
+![Clerk](https://img.shields.io/badge/Clerk-Auth-6C47FF?style=for-the-badge&logo=clerk)
 ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-Styling-06B6D4?style=for-the-badge&logo=tailwindcss)
 
-**DocuTube** is an intelligent web application that seamlessly converts any YouTube video into structured, easy-to-read documents, study notes, or comprehensive summaries. Powered by Google's cutting-edge **Gemini 2.5 Flash** model and built on a high-performance **Next.js + Convex** stack.
+**DocuTube** is an intelligent AI workspace that takes ANY YouTube video link (especially coding tutorials, system design videos, or project builds) and instantly converts it into a full suite of **Production-Ready Engineering Documents**. 
+
+Stop pausing, rewinding, and taking notes from 4-hour long YouTube coding tutorials. Get the complete blueprint upfront, and start "vibe coding" easily.
 
 ---
 
 ## ✨ Features
 
-- **📺 Instant Transcript Extraction**: Automatically fetches captions and transcripts directly from YouTube URLs.
-- **🧠 AI Document Generation**: Uses Gemini 1.5/2.5 Flash to process lengthy transcripts and convert them into organized, formatted markdown documents.
-- **⚡ Real-time Database**: Powered by Convex for instant data synchronization, workspace management, and fast querying.
-- **🎨 Modern UI/UX**: Designed with TailwindCSS for a beautiful, responsive, and highly interactive user experience.
-- **🛡️ Secure API Key Management**: Users can securely input their own Gemini API keys via the UI.
+- **📄 Complete Project Blueprint**: Generates 7 critical documents in under 60 seconds:
+  - PRD (Product Requirements Document)
+  - TRD (Technical Requirements Document & Architecture)
+  - SRS (Software Requirements Specification)
+  - API Documentation (REST endpoints, payloads)
+  - Database Schema
+  - QA Test Cases
+  - Setup & Deployment Guides
+- **🤖 Interactive Video Chat**: Chat directly with the AI about the video. It has full context of the video's transcript and the generated docs.
+- **🛡️ Graceful Manual Fallback**: If YouTube aggressively blocks our automated scrapers from cloud IPs, the UI seamlessly shifts to a manual transcript input state, preserving your context without breaking the experience.
+- **⚡ Real-time Database**: Powered by Convex for instant data synchronization and workspace management.
+- **🔐 Secure API Key Management**: Bring your own Gemini API key. Keys are encrypted and stored locally in your browser.
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: Next.js 14 (App Router), React, TailwindCSS, Lucide Icons
+- **Frontend**: Next.js 14 (App Router), React, TailwindCSS, Framer Motion
 - **Backend & Database**: Convex (Serverless Real-time Database & Functions)
-- **AI & Processing**: Google Generative AI (`@google/generative-ai`), YouTube Transcript Scraper
+- **Authentication**: Clerk (with JWT template integration for Convex)
+- **AI & Processing**: Google Generative AI (`@google/generative-ai`) Gemini 2.5 Flash
 
 ---
 
@@ -41,17 +52,15 @@ npm install
 ```
 
 ### 3. Set up Environment Variables
-Create a `.env.local` file in the root directory and add your Convex and Gemini credentials:
-```env
-# Convex Deployment URL
-NEXT_PUBLIC_CONVEX_URL="your-convex-url"
-
-# Google Gemini API Key
-NEXT_PUBLIC_GEMINI_API_KEY="your-gemini-api-key"
+Create a `.env.local` file by copying the provided example:
+```bash
+cp .env.example .env.local
 ```
+Fill in your Convex and Clerk credentials in `.env.local`. 
+*(Note: Gemini API keys are entered directly in the UI, not in the env file)*
 
 ### 4. Start the Convex Backend
-Run Convex in a separate terminal to initialize your real-time database:
+Run Convex to initialize your real-time database and sync your schema:
 ```bash
 npx convex dev
 ```
@@ -64,10 +73,10 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to see the a
 
 ---
 
-## ⚠️ Important Developer Note on Production Deployment
-If you deploy this application to a serverless provider like Vercel or AWS, the automatic YouTube transcript extraction might fail due to **YouTube's aggressive IP/Bot Blocking (CAPTCHA)** on data center IPs. 
+## ⚠️ Important Note on Production Deployment
+If you deploy this application to a serverless provider like Vercel or AWS, the automatic YouTube transcript extraction might fail due to **YouTube's aggressive IP/Bot Blocking** on data center IPs. 
 
-**For the best and most reliable experience, it is highly recommended to run this project locally (Localhost)**, as residential IP addresses are not blocked by YouTube's bot protection.
+We have engineered a **Graceful Fallback UI** so that if the extraction fails, the user is prompted to paste the transcript manually, and the application resumes the AI generation seamlessly. 
 
 ---
 
